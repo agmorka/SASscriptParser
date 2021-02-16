@@ -3,7 +3,7 @@ import re
 
 class SASscriptParser:
     """
-    <description placeholder>
+        This class provides utility to parse SAS scripts (.sas files)
     """
 
     SAS_STATEMENT_PATTERNS = {
@@ -41,7 +41,8 @@ class SASscriptParser:
 
     def _read_script(self):
         """
-        <description placeholder>
+        This method reads .sas file
+        To do: check whether provided file is a sas file.
         """
         try:
             with open(self.path) as file:
@@ -51,7 +52,9 @@ class SASscriptParser:
 
     def _clean_script(self):
         """
-        <description placeholder>
+        This method cleans SAS script:
+        1. removes unnecessary marks (tabs, line breaks, multiple white-spaces, etc)
+        2. lowers characters
         """
         to_remove_list = ('\n', '\t')
         for rm in to_remove_list:
@@ -61,7 +64,7 @@ class SASscriptParser:
 
     def _remove_comments(self):
         """
-        <description placeholder>
+        This method removes commented script fragments and appends removed comments to the list
         """
         sas_comment_pattern = re.compile(self.SAS_STATEMENT_PATTERNS['comment'])
         self.comments_list = re.findall(sas_comment_pattern, self.__script_txt)
@@ -69,7 +72,7 @@ class SASscriptParser:
 
     def _extract_macros(self):
         """
-        <description placeholder>
+        This method extracts SAS macro definitions from uploaded script and appends them to the list
         """
         sas_macro_pattern = re.compile(self.SAS_STATEMENT_PATTERNS['macro'])
 
@@ -82,7 +85,7 @@ class SASscriptParser:
 
     def _disasamble_script(self):
         """
-        <description placeholder>
+        This method separates SAS statements from the script and creates list of SAS statements
         """
         pattern = "(" + "|".join(
             [value for key, value in self.SAS_STATEMENT_PATTERNS.items() if key in self.STATEMENT_TYPES_TO_EXTRACT]) + ")"
