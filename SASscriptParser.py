@@ -4,6 +4,8 @@ import re
 class SASscriptParser:
     """
         This class provides utility to parse SAS scripts (.sas files)
+
+        TO DO: improve macro call pattern
     """
 
     SAS_STATEMENT_PATTERNS = {
@@ -18,6 +20,7 @@ class SASscriptParser:
         'options': r'(options((?!;).*?);)',
         'macro': r'((\%macro)(((?!\%macro)(?!\%mend).)*)(\%mend))',
         'call_macro': r'(\%((?!let )(?!put )[\w\d\s]+)(\(.*?\))?;)',
+        # 'call_macro': r'(\%((?!let )(?!put )[\w\d\s]+)(\(.*?\))?(;|\%|data|proc|libname|filename|options)?)',
     }
 
     STATEMENT_TYPES_TO_EXTRACT = (
@@ -73,6 +76,8 @@ class SASscriptParser:
     def _extract_macros(self):
         """
         This method extracts SAS macro definitions from uploaded script and appends them to the list
+
+        TO DO: multiple semicolons replace with one
         """
         sas_macro_pattern = re.compile(self.SAS_STATEMENT_PATTERNS['macro'])
 
@@ -91,10 +96,14 @@ class SASscriptParser:
             [value for key, value in self.SAS_STATEMENT_PATTERNS.items() if key in self.STATEMENT_TYPES_TO_EXTRACT]) + ")"
         sas_statements_pattern = re.compile(pattern, flags=re.IGNORECASE)
 
-        for statement in re.findall(sas_statements_pattern, self.__script_txt):
+        for order_num, statement in enumerate(re.findall(sas_statements_pattern, self.__script_txt)):
             for statement_type, pattern in self.SAS_STATEMENT_PATTERNS.items():
                 if statement_type in self.STATEMENT_TYPES_TO_EXTRACT and re.search(pattern, statement[0]):
-                    self.statements_list.append((statement_type, statement[0]))
+                    self.statements_list.append((statement_type,order_num, statement[0]))
+                    # if statement_type == 'call_macro':
+                    #     self.statements_list.append((statement_type, statement[1]))
+                    # else:
+                    #     self.statements_list.append((statement_type, statement[0]))
 
     def parse(self):
         self._read_script()
@@ -104,19 +113,4 @@ class SASscriptParser:
         self._disasamble_script()
 
 
-if __name__ == "__main__":
-
-    path = r'H:\Documents\00_development\sprint23_STRY2219473_DoD_Default_files_WB\2.23.4.1.0-DoD_Default_files_WB_DSIP_integrity_tests.sas'
-    sas_parser = SASscriptParser(script_path=path)
-    sas_parser.parse()
-
-    def save_to_file(p: str, lst: list):
-        with open(p, "w") as file:
-            for item in lst:
-                file.write(str(item))
-                file.write('\n\n')
-
-    save_to_file(p=r"C:\Users\fu40av\!python\aaaa\comments.txt", lst=list(sas_parser.comments_list))
-    save_to_file(p=r"C:\Users\fu40av\!python\aaaa\macros.txt", lst=list(sas_parser.macros_list))
-    save_to_file(p=r"C:\Users\fu40av\!python\aaaa\statements.txt", lst=list(sas_parser.statements_list))
-
+# if __name__ == "__main__"
