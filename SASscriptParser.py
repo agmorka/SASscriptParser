@@ -78,8 +78,6 @@ class SASscriptParser:
     def _extract_macros(self):
         """
         This method extracts SAS macro definitions from uploaded script and appends them to the list
-
-        TO DO: multiple semicolons replace with one
         """
         sas_macro_pattern = re.compile(self.SAS_STATEMENT_PATTERNS['macro'])
 
@@ -104,6 +102,9 @@ class SASscriptParser:
                     self.statements_list.append((statement_type, order_num, statement[0]))
 
     def parse(self):
+        """
+        This method is responsible for parsing SAS script file
+        """
         self._read_script()
         self._remove_comments()
         self._clean_script()
