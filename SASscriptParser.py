@@ -4,12 +4,11 @@ import re
 class SASscriptParser:
     """
         This class provides utility to parse SAS scripts (.sas files)
-
-        TO DO: improve macro call pattern
     """
 
     SAS_STATEMENT_PATTERNS = {
-        'comment': r'/\*.*?\*/',
+        'block_comment': r'/\*.*?\*/',
+        'line_comment': r'^(\*.*?)$',
         'libname': r'(libname((?!;).*?);)',
         'data_step': r'(data ((?!run;).*?)run;)',
         'proc_step': r'(proc ((?!run;)(?!quit;).*?)(quit;|run;))',
@@ -19,8 +18,7 @@ class SASscriptParser:
         'include': r'(\%include((?!;).*?);)',
         'options': r'(options((?!;).*?);)',
         'macro': r'((\%macro)(((?!\%macro)(?!\%mend).)*)(\%mend))',
-        'call_macro': r'(\%((?!let )(?!put )[\w\d\s]+)(\(.*?\))?;)',
-        # 'call_macro': r'(\%((?!let )(?!put )[\w\d\s]+)(\(.*?\))?(;|\%|data|proc|libname|filename|options)?)',
+        'call_macro': r'(\%((?!let )(?!put )(?!include )[\w\d\s]+)(\(.*?\))?(;|\%|data|proc|libname|filename|options)?)',
     }
 
     STATEMENT_TYPES_TO_EXTRACT = (
@@ -69,9 +67,13 @@ class SASscriptParser:
         """
         This method removes commented script fragments and appends removed comments to the list
         """
-        sas_comment_pattern = re.compile(self.SAS_STATEMENT_PATTERNS['comment'])
-        self.comments_list = re.findall(sas_comment_pattern, self.__script_txt)
-        self.__script_txt = re.sub(sas_comment_pattern, '', self.__script_txt)
+        sas_block_comment_pattern = re.compile(self.SAS_STATEMENT_PATTERNS['block_comment'], flags=re.DOTALL)
+        self.comments_list += re.findall(sas_block_comment_pattern, self.__script_txt)
+        self.__script_txt = re.sub(sas_block_comment_pattern, '', self.__script_txt)
+
+        sas_line_comment_pattern = re.compile(self.SAS_STATEMENT_PATTERNS['line_comment'], flags=re.MULTILINE)
+        self.comments_list += re.findall(sas_line_comment_pattern, self.__script_txt)
+        self.__script_txt = re.sub(sas_line_comment_pattern, '', self.__script_txt)
 
     def _extract_macros(self):
         """
@@ -99,16 +101,12 @@ class SASscriptParser:
         for order_num, statement in enumerate(re.findall(sas_statements_pattern, self.__script_txt)):
             for statement_type, pattern in self.SAS_STATEMENT_PATTERNS.items():
                 if statement_type in self.STATEMENT_TYPES_TO_EXTRACT and re.search(pattern, statement[0]):
-                    self.statements_list.append((statement_type,order_num, statement[0]))
-                    # if statement_type == 'call_macro':
-                    #     self.statements_list.append((statement_type, statement[1]))
-                    # else:
-                    #     self.statements_list.append((statement_type, statement[0]))
+                    self.statements_list.append((statement_type, order_num, statement[0]))
 
     def parse(self):
         self._read_script()
-        self._clean_script()
         self._remove_comments()
+        self._clean_script()
         self._extract_macros()
         self._disasamble_script()
 
